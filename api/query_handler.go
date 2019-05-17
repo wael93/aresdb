@@ -178,6 +178,8 @@ func handleQuery(memStore memstore.MemStore, deviceManager *query.DeviceManager,
 
 	if aqlRequest.Debug > 0 || aqlRequest.Profiling != "" {
 		qc.Debug = true
+		aqlRequest.Verbose = 1
+
 	}
 	qc.Profiling = aqlRequest.Profiling
 

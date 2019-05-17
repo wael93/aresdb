@@ -60,6 +60,9 @@ func (qc *AQLQueryContext) initResultFlushContext() {
 
 // flushResultBuffer reads dimension and measure data from current OOPK buffer to Results
 func (qc *AQLQueryContext) flushResultBuffer() {
+	start := utils.Now()
+	defer func() {qc.reportTiming(qc.cudaStreams[0], &start, resultFlushTiming)}()
+
 	if qc.Results == nil {
 		qc.Results = make(queryCom.AQLQueryResult)
 	}
@@ -82,6 +85,7 @@ func (qc *AQLQueryContext) flushResultBuffer() {
 	}
 
 	for i := 0; i < oopkContext.ResultSize; i++ {
+		dimReadingStart := utils.Now()
 		for dimIndex := range oopkContext.Dimensions {
 			offsets := dimOffsets[dimIndex]
 			valueOffset, nullOffset := offsets[0], offsets[1]
@@ -109,6 +113,7 @@ func (qc *AQLQueryContext) flushResultBuffer() {
 				valuePtr, nullPtr, i, dpc.dimensionDataTypes[dimIndex], dpc.reverseDicts[dimIndex],
 				timeDimensionMeta, dpc.dimensionValueCache[dimIndex])
 		}
+		utils.GetRootReporter().GetTimer(utils.QueryDimReadLatency).Record(utils.Now().Sub(dimReadingStart))
 
 		if qc.isNonAggregationQuery {
 			// TODO: @shz eagerly flush out to connection instead of host memory
